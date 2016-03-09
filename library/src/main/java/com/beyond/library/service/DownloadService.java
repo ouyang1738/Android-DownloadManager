@@ -198,7 +198,8 @@ public class DownloadService extends Service {
 			RandomAccessFile raf = null;
 			try {
 				// 1.链接网络文件
-				conn = NetUtil.buildConnection(mFileInfo.getUrl());
+				String url = mFileInfo.getUrl();
+				conn = NetUtil.buildConnection(url);
 				int contentLength = -1;
 				if (conn.getResponseCode() == 200) {
 					contentLength = conn.getContentLength();
@@ -207,7 +208,7 @@ public class DownloadService extends Service {
 					CallbackManager.getInstance().notifyFailure(mFileInfo, "下载资源不存在!");
 					return;
 				}
-				conn.disconnect();
+
 				//存在SD Card
 				L.d("【"+mFileInfo.getFileName()+"】文件大小："+DownloadUtil.formatFileSize(contentLength, false));
 				if (StorageUtil.externalMemoryAvailable()) {
@@ -273,5 +274,7 @@ public class DownloadService extends Service {
 			}
 		}
 	}
+
+
 
 }

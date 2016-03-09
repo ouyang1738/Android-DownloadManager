@@ -23,24 +23,28 @@ import com.beyond.library.manager.DownloadManager;
 import com.beyond.library.util.DownloadUtil;
 import com.beyond.library.util.L;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class FileListAdapter extends BaseAdapter {
 
 	protected static final int ERROR = 10;
 	private static final int NORMAL = 11;
-	protected static final int CONFIRM_DOWNLOAD_IN_MOBILE_NET = 12;
+	protected static final int MOBILE_NET_CONFIRM = 12;
 	private Context mContext;
 	private List<DownloadFileInfo> mFileList;
 	private LayoutInflater inflater;
 	private DownloadManager mDownloadManager;
+	private Map<Integer,DownloadListener> mListenerMap;
 
 	public FileListAdapter(Context context, List<DownloadFileInfo> fileInfos) {
 		this.mContext = context;
 		this.mFileList = fileInfos;
 		this.inflater = LayoutInflater.from(context);
 		mDownloadManager = DownloadManager.getInstance();
+		mListenerMap = new HashMap<>();
 	}
 
 	@Override
@@ -59,7 +63,7 @@ public class FileListAdapter extends BaseAdapter {
 	}
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView(final int position, View convertView, ViewGroup parent) {
 		ViewHolder holder = null;
 		if (convertView == null) {
 			holder = new ViewHolder();
@@ -80,7 +84,10 @@ public class FileListAdapter extends BaseAdapter {
 				
 				@Override
 				public void onInitSuccess(DownloadFileInfo fileInfo) {
-					sendMessage(fileInfo);
+					Message msg = Message.obtain();
+					msg.what = DownloadListenerImpl.NORMAL;
+					msg.obj = fileInfo;
+					mHandler.sendMessage(msg);
 				}
 
 				@Override
@@ -101,7 +108,7 @@ public class FileListAdapter extends BaseAdapter {
 				mContext.startActivity(intent);
 			}
 		});
-		holder.tvFileName.setText(fileInfo.getFileName());
+		holder.tvFileName.setText(fileInfo.getShowName());
 		holder.progressBar.setMax(100);
 		
 		holder.progressBar.setProgress(fileInfo.getProgress());
@@ -110,7 +117,6 @@ public class FileListAdapter extends BaseAdapter {
 		String stateDesc = DownloadUtil.getDownloadStateDesc(fileInfo);
 		holder.btnStart.setText(stateDesc);
 
-
 		holder.btnStart.setOnClickListener(new OnClickListener() {
 
 			@Override
@@ -118,7 +124,7 @@ public class FileListAdapter extends BaseAdapter {
 				switch (fileInfo.getDownloadState()) {
 				case DownloadState.DOWNLOAD_NOTSTART:// 未下载——>下载
 					//注册监听
-					mDownloadManager.registListener(fileInfo, listener);
+					mDownloadManager.registListener(fileInfo, getListenerByPosition(position));
 					mDownloadManager.executeDownload(mContext, fileInfo);
 					break;
 				case DownloadState.DOWNLOAD_ING:// 下载中——>暂停
@@ -126,11 +132,11 @@ public class FileListAdapter extends BaseAdapter {
 					break;
 				case DownloadState.DOWNLOAD_PAUSE:// 暂停——>继续下载
 					//注册监听
-					mDownloadManager.registListener(fileInfo, listener);
+					mDownloadManager.registListener(fileInfo, getListenerByPosition(position));
 					mDownloadManager.executeResume(mContext, fileInfo);
 					break;
 				case DownloadState.DOWNLOAD_SUCCESS:// 下载完成——>“安装”
-					
+					DownloadUtil.installApk(mContext,fileInfo);
 					break;
 				case DownloadState.DOWNLOAD_FAILURE:// 下载失败——>重新下载
 					mDownloadManager.executeDownload(mContext, fileInfo);
@@ -146,13 +152,29 @@ public class FileListAdapter extends BaseAdapter {
 		return convertView;
 	}
 
+	/**
+	 * 每一个下载的position都对应一个downloadListener
+	 * @param pos
+	 * @return
+     */
+	private DownloadListener getListenerByPosition(int pos){
+		DownloadListener listener = mListenerMap.get(pos);
+		if (listener == null) {
+			listener = new DownloadListenerImpl(mHandler,mContext);
+			mListenerMap.put(pos,listener);
+		}
+		return listener;
+	}
+
+
+
 	public Handler mHandler = new Handler() {
 
 		@Override
 		public void handleMessage(Message msg) {
 			super.handleMessage(msg);
 			switch (msg.what) {
-			case NORMAL:
+			case DownloadListenerImpl.NORMAL:
 				DownloadFileInfo fileInfo = (DownloadFileInfo) msg.obj;
 				if (fileInfo == null) return;
 				
@@ -169,66 +191,20 @@ public class FileListAdapter extends BaseAdapter {
 				}
 				notifyDataSetChanged();
 				break;
-			case ERROR:
+			case DownloadListenerImpl.ERROR:
 				notifyDataSetChanged();
 				break;
-			case CONFIRM_DOWNLOAD_IN_MOBILE_NET:
+			case DownloadListenerImpl.MOBILE_NET_CONFIRM:
 				L.e("运营商流量下载确认");
 				final DownloadFileInfo fileInfo2 = (DownloadFileInfo) msg.obj;
 				String sizeStr = DownloadUtil.formatFileSize(fileInfo2.getLength(), false);
 				String content = "您现在使用的是运营商流量，下载文件大小为："+sizeStr+",确认下载？";
 
-
 			default:
 				break;
 			}
-			
-			
 		}
 	};
-	
-	public DownloadListener listener = new DownloadListener() {
-
-		@Override
-		public void onDownloading(DownloadFileInfo fileInfo) {
-			sendMessage(fileInfo);
-		}
-
-		@Override
-		public void onDownloadPause(DownloadFileInfo fileInfo) {
-			sendMessage(fileInfo);
-		}
-
-		@Override
-		public void onDownloadFinished(DownloadFileInfo fileInfo) {
-			sendMessage(fileInfo);
-		}
-
-		@Override
-		public void onDownloadError(DownloadFileInfo fileInfo,String errorInfo) {
-			sendMessage(fileInfo);
-		}
-
-		@Override
-		public void onDownloadWait(DownloadFileInfo fileInfo) {
-			sendMessage(fileInfo);
-		}
-
-		@Override
-		public void onMobileNetConfirm(DownloadFileInfo fileInfo) {
-			Message msg = Message.obtain();
-			msg.what = CONFIRM_DOWNLOAD_IN_MOBILE_NET;
-			msg.obj = fileInfo;
-			mHandler.sendMessage(msg);
-		}
-	};
-	
-	private void sendMessage(DownloadFileInfo fileInfo) {
-		Message msg = Message.obtain();
-		msg.what = NORMAL;
-		msg.obj = fileInfo;
-		mHandler.sendMessage(msg);
-	}
 
 	
 	static class ViewHolder {

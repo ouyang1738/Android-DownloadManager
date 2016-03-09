@@ -1,5 +1,7 @@
 package com.beyond.library.entity;
 
+import com.beyond.library.util.ShortTextUtil;
+
 import java.io.Serializable;
 
 /**
@@ -17,6 +19,7 @@ public class DownloadFileInfo implements Serializable {
 	private int id;
 	private String url;
 	private String fileName;
+	private String showName;
 	private long length;
 	private long finished;
 	private int progress;
@@ -37,11 +40,12 @@ public class DownloadFileInfo implements Serializable {
 				+ storagePath + "]";
 	}
 
-	public DownloadFileInfo(String url, String fileName, String storagePath) {
+	public DownloadFileInfo(String url, String showName, String storagePath) {
 		super();
 		this.url = url;
-		this.fileName = fileName;
+		this.showName = showName;
 		this.storagePath = storagePath;
+		this.fileName = ShortTextUtil.generateFileNameByUrl(url);
 	}
 
 	public int getId() {
@@ -131,5 +135,12 @@ public class DownloadFileInfo implements Serializable {
 	public void setAcceptRanges(boolean acceptRanges) {
 		this.acceptRanges = acceptRanges;
 	}
-	
+
+	public String getShowName() {
+		return showName;
+	}
+
+	public void setShowName(String showName) {
+		this.showName = showName;
+	}
 }

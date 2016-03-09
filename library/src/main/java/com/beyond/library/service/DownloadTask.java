@@ -210,7 +210,6 @@ public class DownloadTask {
 						// 累加每个线程完成的进度
 						mThreadInfo.setFinished(mThreadInfo.getFinished() + len);
 //						L.d(mThreadInfo.getId()+"--finished:"+mThreadInfo.getFinished());
-						L.d("isFailure:"+isFailure);
 						// 每隔1000s回调一次
 						if (System.currentTimeMillis() - time > callbackInterval) {
 							time = System.currentTimeMillis();

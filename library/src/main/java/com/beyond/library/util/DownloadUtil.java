@@ -1,8 +1,13 @@
 package com.beyond.library.util;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+
 import com.beyond.library.entity.DownloadFileInfo;
 import com.beyond.library.entity.DownloadState;
 
+import java.io.File;
 import java.text.DecimalFormat;
 
 
@@ -123,5 +128,27 @@ public class DownloadUtil {
 			fileSizeString = df.format((double) size / (1024 * 1024 * 1024)) + "G";
 		}
 		return fileSizeString;
+	}
+
+
+
+	/**
+	 * 安装apk
+	 *
+	 * @param fileInfo
+	 */
+	public static void installApk(Context context,DownloadFileInfo fileInfo) {
+		if (fileInfo.getStoragePath() == null || context == null) return;
+//		String fullPath = fileInfo.getStoragePath()+fileInfo.getFileName();
+//		L.d("下载路径:"+fullPath);
+		File apkFile = new File(fileInfo.getStoragePath(), fileInfo.getFileName());
+		if (!apkFile.exists()) {
+			return;
+		}
+		Uri fileUri = Uri.fromFile(apkFile);
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setDataAndType(fileUri, "application/vnd.android.package-archive");
+		context.startActivity(intent);
 	}
 }
