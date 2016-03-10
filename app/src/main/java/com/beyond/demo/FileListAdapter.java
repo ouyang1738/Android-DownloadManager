@@ -117,6 +117,8 @@ public class FileListAdapter extends BaseAdapter {
 		String stateDesc = DownloadUtil.getDownloadStateDesc(fileInfo);
 		holder.btnStart.setText(stateDesc);
 
+		mDownloadManager.registListener(fileInfo, getListenerByPosition(position));
+
 		holder.btnStart.setOnClickListener(new OnClickListener() {
 
 			@Override
@@ -124,7 +126,6 @@ public class FileListAdapter extends BaseAdapter {
 				switch (fileInfo.getDownloadState()) {
 				case DownloadState.DOWNLOAD_NOTSTART:// 未下载——>下载
 					//注册监听
-					mDownloadManager.registListener(fileInfo, getListenerByPosition(position));
 					mDownloadManager.executeDownload(mContext, fileInfo);
 					break;
 				case DownloadState.DOWNLOAD_ING:// 下载中——>暂停
@@ -132,7 +133,6 @@ public class FileListAdapter extends BaseAdapter {
 					break;
 				case DownloadState.DOWNLOAD_PAUSE:// 暂停——>继续下载
 					//注册监听
-					mDownloadManager.registListener(fileInfo, getListenerByPosition(position));
 					mDownloadManager.executeResume(mContext, fileInfo);
 					break;
 				case DownloadState.DOWNLOAD_SUCCESS:// 下载完成——>“安装”

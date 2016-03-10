@@ -7,6 +7,7 @@ import android.os.Message;
 import com.beyond.library.entity.DownloadFileInfo;
 import com.beyond.library.listener.DownloadListener;
 import com.beyond.library.util.DownloadUtil;
+import com.beyond.library.util.L;
 
 
 /**
@@ -50,6 +51,7 @@ public class DownloadListenerImpl implements DownloadListener {
 
     @Override
     public void onDownloadError(DownloadFileInfo fileInfo, String errorInfo) {
+        L.e("下载失败:"+errorInfo);
         sendMessage(fileInfo);
     }
 

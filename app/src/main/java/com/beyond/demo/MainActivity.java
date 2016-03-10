@@ -6,8 +6,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.ListView;
 
 import com.beyond.library.entity.DownloadFileInfo;
-import com.beyond.library.util.L;
-import com.beyond.library.util.ShortTextUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,12 +23,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.download_for_test);
         mLv = (ListView) findViewById(R.id.lvFile);
 
-        String s1 = ShortTextUtil.generateFileNameByUrl("http://api.gfan.com/market/api/apk?type=WAP&cid=99&uid=-1&pid=rs+t6pS6i1rGRkUoxtIO4muCJR57sfji&sid=99J5qxYG1ZicLE8NRvk4OA==");
-        L.e(s1);
-        String s2 = ShortTextUtil.generateFileNameByUrl("http://api.gfan.com/market/api/apk?type=WAP&cid=99&uid=-1&pid=rs+t6pS6i1rGRkUoxtIO4muCJR57sfji&sid=99J5qxYG1ZicLE8NRvk4OA==");
-        L.e(s2);
-        String s3 = ShortTextUtil.generateFileNameByUrl("http://apk.hiapk.com/web/api.do?qt=8051&id=608");
-        L.e(s3);
         // 下载路径
         String storagePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/downloads/";
         // 创建下载文件的集合
