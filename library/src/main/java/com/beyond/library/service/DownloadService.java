@@ -7,7 +7,8 @@ import android.os.IBinder;
 import android.os.Message;
 import android.text.TextUtils;
 
-import com.beyond.library.cfg.DownloadConfiguration;
+import com.beyond.library.constants.Constants;
+import com.beyond.library.constants.DownloadConfiguration;
 import com.beyond.library.entity.DownloadConstants;
 import com.beyond.library.entity.DownloadFileInfo;
 import com.beyond.library.manager.CallbackManager;
@@ -30,20 +31,8 @@ import java.util.Map;
  */
 public class DownloadService extends Service {
 
-	public static final String ACTION_INIT = "action_init";
-	public static final String ACTION_START = "action_start";
-	public static final String ACTION_STOP = "action_stop";
-	public static final String ACTION_PAUSE = "action_pause";
-	public static final String ACTION_RESUME = "action_resume";
-	public static final String ACTION_FINISH = "action_finish";
-	public static final String ACTION_UPDATE = "action_update";
-	public static final String ACTION_CONFIRM = "action_confirm";
-
 	private static final int MSG_INIT = 0;
 	public int mThreadCount = 1;
-	// public static final String DOWNLOAD_PATH =
-	// Environment.getExternalStorageDirectory().getAbsolutePath() +
-	// "/downloads/";
 	// 下载任务的集合
 	private Map<String, DownloadTask> mTaskMap = new LinkedHashMap<String, DownloadTask>();
 
@@ -57,28 +46,27 @@ public class DownloadService extends Service {
 		if (fileInfo == null) {
 			return -1;
 		}
-		if (ACTION_INIT.equals(intent.getAction())) {
-			L.i("init-->fileInfo::" + fileInfo.toString());
-
-		} else if (ACTION_START.equals(intent.getAction())) {
+		if (Constants.ACTION_START.equals(intent.getAction())) {
 			L.i("start-->fileInfo::" + fileInfo.toString());
+			//判断网络状态,网络不可用时不可下载
 			int netWorkType = NetUtil.getNetWorkType(this);
 			if (netWorkType == DownloadConstants.NetType.INVALID) {
 				// 网络不可用
 				CallbackManager.getInstance().notifyInitFailure(fileInfo, "网络不可用");
 			} else {
 				// WiFi网络
+				//开启初始化线程
 				InitThread initThread = new InitThread(fileInfo);
 				initThread.start();
 			}
-		} else if (ACTION_PAUSE.equals(intent.getAction())) {
+		} else if (Constants.ACTION_PAUSE.equals(intent.getAction())) {
 			L.i("stop-->fileInfo::" + fileInfo.toString());
 			// 从集合中取出下载任务
 			DownloadTask downloadTask = mTaskMap.get(fileInfo.getUrl());
 			if (downloadTask != null) {
 				downloadTask.doPause();
 			}
-		} else if (ACTION_RESUME.equals(intent.getAction())) {
+		} else if (Constants.ACTION_RESUME.equals(intent.getAction())) {
 			L.i("resume-->fileInfo::" + fileInfo.toString());
 			// 从集合中取出下载任务
 			DownloadTask downloadTask = mTaskMap.get(fileInfo.getUrl());
@@ -89,7 +77,7 @@ public class DownloadService extends Service {
 				mTaskMap.put(fileInfo.getUrl(), downloadTask);
 			}
 			downloadTask.doDownload();
-		} else if (ACTION_CONFIRM.equals(intent.getAction())) {
+		} else if (Constants.ACTION_CONFIRM.equals(intent.getAction())) {
 			L.i("confirm-->fileInfo::" + fileInfo.toString());
 			executeTask(fileInfo);
 		}
@@ -107,8 +95,7 @@ public class DownloadService extends Service {
 			switch (msg.what) {
 			case MSG_INIT:
 				DownloadFileInfo fileInfo = (DownloadFileInfo) msg.obj;
-				L.i("handler-->fileInfo::" + fileInfo);
-				// 非Wifi网络并且未确认在手机流量网络下载
+				// WIFI环境直接下载;运营商网络环境(2G/3G/4G)需要用户确认后才执行下载
 				int netWorkType = NetUtil.getNetWorkType(DownloadService.this);
 				if (netWorkType != DownloadConstants.NetType.WIFI && !DownloadConfiguration.CONFIRM_DOWNLOAD_IN_MOBILE_NET) {
 					CallbackManager.getInstance().notifyMobileNetConfirm(fileInfo);
@@ -140,10 +127,7 @@ public class DownloadService extends Service {
 	}
 	
 	/**
-	 * judgeSourceResumeEnabled 函数 判断源是否支持断点续传
-	 *
-	 * @param
-	 * @return boolean
+	 * 判断源是否支持断点续传
 	 */
 	private boolean isAcceptRange(String urlStr) {
 		HttpURLConnection conn = null;
@@ -172,7 +156,6 @@ public class DownloadService extends Service {
 		}finally{
 			if (conn!=null) {
 				conn.disconnect();
-				conn = null;
 			}
 		}
 	}
@@ -209,6 +192,7 @@ public class DownloadService extends Service {
 					return;
 				}
 
+				//2.获取手机存储空间,存储空间不足的情况下不可下载
 				//存在SD Card
 				L.d("【"+mFileInfo.getFileName()+"】文件大小："+DownloadUtil.formatFileSize(contentLength, false));
 				if (StorageUtil.externalMemoryAvailable()) {
@@ -226,7 +210,7 @@ public class DownloadService extends Service {
 					}
 				}
 				
-				//设置下载线程个数
+				//3.设置下载线程个数
 				//若支持断点下载，则根据文件大小分配线程
 				if (isAcceptRange(mFileInfo.getUrl())) {
 					mThreadCount = DownloadUtil.getThreadCount(contentLength);
@@ -236,6 +220,8 @@ public class DownloadService extends Service {
 					mThreadCount = 1;
 					mFileInfo.setAcceptRanges(false);
 				}
+
+				//4.创建下载路径
 				String storagePath = mFileInfo.getStoragePath();
 				if (TextUtils.isEmpty(storagePath)) {
 					L.e("下载路径不存在");
@@ -246,27 +232,28 @@ public class DownloadService extends Service {
 				if (!dir.exists()) {
 					dir.mkdir();
 				}
-				// 3.在本地创建文件
+
+				// 5.在本地创建文件
 				File file = new File(dir, mFileInfo.getFileName());
 				// 随机访问的文件，可以在文件的任意一个位置进行IO操作
 				raf = new RandomAccessFile(file, "rwd");
-				// 4.设置本地文件长度
+				// 设置本地文件长度
 				raf.setLength(contentLength);
+
 				mFileInfo.setLength(contentLength);
 
+				//6.初始化过程完毕
 				mHandler.obtainMessage(MSG_INIT, mFileInfo).sendToTarget();
 			} catch (Exception e) {
 				L.e(e);
-				CallbackManager.getInstance().notifyFailure(mFileInfo, "获取下载文件大小出错！");
+				CallbackManager.getInstance().notifyFailure(mFileInfo, "获取下载文件出错！");
 			} finally {
 				try {
 					if (conn != null) {
 						conn.disconnect();
-						conn = null;
 					}
 					if (raf != null) {
 						raf.close();
-						raf = null;
 					}
 				} catch (IOException e) {
 					e.printStackTrace();

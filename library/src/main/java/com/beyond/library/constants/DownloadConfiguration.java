@@ -1,4 +1,4 @@
-package com.beyond.library.cfg;
+package com.beyond.library.constants;
 
 public class DownloadConfiguration {
 

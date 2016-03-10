@@ -92,6 +92,7 @@ public class CallbackManager {
 			if (listenerList == null || listenerList.size() == 0) {
 				return;
 			}
+			//计算下载速度
 			if (mSpeedMap.containsKey(url)) {
 				long currentTimeMillis = System.currentTimeMillis();
 				long currentFinished = fileInfo.getFinished();
@@ -102,6 +103,7 @@ public class CallbackManager {
 				speedInfo.setLastFinished(currentFinished);
 				speedInfo.setLastTimeMillis(currentTimeMillis);
 			}
+			//通知所有观察者更新进度
 			for (int i = 0; i < listenerList.size(); i++) {
 				fileInfo.setDownloadState(DownloadState.DOWNLOAD_ING);
 				DownloadListener listener = listenerList.get(i);

@@ -3,7 +3,8 @@ package com.beyond.library.manager;
 import android.content.Context;
 import android.content.Intent;
 
-import com.beyond.library.cfg.DownloadConfiguration;
+import com.beyond.library.constants.Constants;
+import com.beyond.library.constants.DownloadConfiguration;
 import com.beyond.library.db.ThreadDAO;
 import com.beyond.library.db.ThreadDAOImpl;
 import com.beyond.library.entity.DownloadFileInfo;
@@ -140,7 +141,7 @@ public class DownloadManager {
 		}
 		//通知service执行下载
 		Intent intent = new Intent(context,DownloadService.class);
-		intent.setAction(DownloadService.ACTION_START);
+		intent.setAction(Constants.ACTION_START);
 		intent.putExtra("fileInfo", fileInfo);
 		context.startService(intent);
 	}
@@ -155,7 +156,7 @@ public class DownloadManager {
 //		fileInfo.setDownloadState(DownloadState.DOWNLOAD_PAUSE);
 		//通知service停止下载
 		Intent intent = new Intent(context,DownloadService.class);
-		intent.setAction(DownloadService.ACTION_PAUSE);
+		intent.setAction(Constants.ACTION_PAUSE);
 		intent.putExtra("fileInfo", fileInfo);
 		context.startService(intent);
 	}
@@ -169,7 +170,7 @@ public class DownloadManager {
 		}
 		//通知service停止下载
 		Intent intent = new Intent(context,DownloadService.class);
-		intent.setAction(DownloadService.ACTION_RESUME);
+		intent.setAction(Constants.ACTION_RESUME);
 		intent.putExtra("fileInfo", fileInfo);
 		context.startService(intent);
 	}
